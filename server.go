@@ -113,15 +113,6 @@ func New(h Handler) *Server {
 	return &Server{h: h}
 }
 
-// Serve processes an incoming event using registered handler.
-func (s *Server) Serve(ctx context.Context, e Event) error {
-	if s.h == nil {
-		panic("crane: nil server handler")
-	}
-
-	return s.h.Do(ctx, e)
-}
-
 // SetHandler sets the server handler.
 func (s *Server) SetHandler(h Handler) {
 	s.mu.Lock()
@@ -132,4 +123,13 @@ func (s *Server) SetHandler(h Handler) {
 	}
 
 	s.h = h
+}
+
+// Serve processes an incoming event using registered handler.
+func (s *Server) Serve(ctx context.Context, e Event) error {
+	if s.h == nil {
+		panic("crane: nil server handler")
+	}
+
+	return s.h.Do(ctx, e)
 }
