@@ -1,10 +1,9 @@
-package crane_test
+package main
 
 import (
 	"os"
 	"testing"
 
-	"github.com/antklim/crane"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -44,7 +43,7 @@ func teardown(t *testing.T) {
 func TestLoadConfig(t *testing.T) {
 	setup(t)
 
-	expectedConfig := &crane.Config{
+	expectedConfig := &Config{
 		ArchiveBucket:    "CRANE_ARCHIVE_BUCKET",
 		ArchiveFolder:    "CRANE_ARCHIVE_FOLDER",
 		DeployBucket:     "CRANE_DEPLOY_BUCKET",
@@ -52,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 		ProductionBucket: "CRANE_PRODUCTION_BUCKET",
 	}
 
-	config, err := crane.LoadConfig()
+	config, err := LoadConfig()
 	require.NoError(t, err)
 	assert.Equal(t, expectedConfig, config)
 

@@ -1,4 +1,4 @@
-package crane
+package main
 
 import env "github.com/Netflix/go-env"
 
