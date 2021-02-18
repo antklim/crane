@@ -43,7 +43,7 @@ func teardown(t *testing.T) {
 func TestLoadConfig(t *testing.T) {
 	setup(t)
 
-	expectedConfig := &Config{
+	expectedConfig := &config{
 		ArchiveBucket:    "CRANE_ARCHIVE_BUCKET",
 		ArchiveFolder:    "CRANE_ARCHIVE_FOLDER",
 		DeployBucket:     "CRANE_DEPLOY_BUCKET",
@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 		ProductionBucket: "CRANE_PRODUCTION_BUCKET",
 	}
 
-	config, err := LoadConfig()
+	config, err := loadConfig()
 	require.NoError(t, err)
 	assert.Equal(t, expectedConfig, config)
 

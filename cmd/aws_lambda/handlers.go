@@ -13,22 +13,38 @@ const (
 	rollbackCategory string = "rollback"
 )
 
-func changeHandler(ctx context.Context, event crane.Event) error {
-	return errors.New("not implemented")
+type handler func(*config) func(context.Context, crane.Event) error
+
+var handlersMap = map[string]handler{
+	changeCategory:   changeHandler,
+	releaseCategory:  releaseHandler,
+	rollbackCategory: rollbackHandler,
 }
 
-func releaseHandler(ctx context.Context, event crane.Event) error {
-	return errors.New("not implemented")
+func changeHandler(cfg *config) func(ctx context.Context, event crane.Event) error {
+	return func(ctx context.Context, event crane.Event) error {
+		return errors.New("not implemented")
+	}
 }
 
-func rollbackHandler(ctx context.Context, event crane.Event) error {
-	return errors.New("not implemented")
+func releaseHandler(cfg *config) func(ctx context.Context, event crane.Event) error {
+	return func(ctx context.Context, event crane.Event) error {
+		return errors.New("not implemented")
+	}
 }
 
-func craneHandler() *crane.EventMux {
+func rollbackHandler(cfg *config) func(ctx context.Context, event crane.Event) error {
+	return func(ctx context.Context, event crane.Event) error {
+		return errors.New("not implemented")
+	}
+}
+
+func craneHandler(cfg *config) *crane.EventMux {
 	mux := crane.NewEventMux()
-	mux.HandleFunc(changeCategory, changeHandler)
-	mux.HandleFunc(releaseCategory, releaseHandler)
-	mux.HandleFunc(rollbackCategory, rollbackHandler)
+
+	for category, h := range handlersMap {
+		mux.HandleFunc(category, h(cfg))
+	}
+
 	return mux
 }

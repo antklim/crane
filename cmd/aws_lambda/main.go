@@ -2,24 +2,34 @@ package main
 
 import (
 	"context"
+	"log"
 
 	"github.com/antklim/crane"
 	runtime "github.com/aws/aws-lambda-go/lambda"
 )
 
-var craneServer *crane.Server
+var (
+	version     string // sha1 of the code commit
+	craneServer *crane.Server
+)
 
 func init() {
-	h := craneHandler()
+	cfg, err := loadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	h := craneHandler(cfg)
 	craneServer = crane.New(h)
 }
 
-func handler(ctx context.Context, event crane.Event) error {
-	// TODO: Logging
+func lambdaHandler(ctx context.Context, event crane.Event) error {
+	log.Printf("crane: version %s\n", version)
+	log.Printf("crane: event %+v\n", event)
 
 	return craneServer.Serve(ctx, event)
 }
 
 func main() {
-	runtime.Start(handler)
+	runtime.Start(lambdaHandler)
 }
