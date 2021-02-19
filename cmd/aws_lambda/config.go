@@ -8,6 +8,7 @@ type config struct {
 	DeployBucket     string `env:"CRANE_DEPLOY_BUCKET"`
 	StageBucket      string `env:"CRANE_STAGE_BUCKET"`
 	ProductionBucket string `env:"CRANE_PRODUCTION_BUCKET"`
+	Region           string `env:"CRANE_REGION,default=ap-southeast-2"`
 }
 
 func loadConfig() (*config, error) {

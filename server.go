@@ -3,6 +3,7 @@ package crane
 import (
 	"context"
 	"errors"
+	"log"
 	"sync"
 )
 
@@ -79,13 +80,13 @@ func (mux *EventMux) Handle(category string, h Handler) {
 	defer mux.mu.Unlock()
 
 	if category == "" {
-		panic("crane: invalid event category")
+		log.Panic("crane: invalid event category")
 	}
 	if h == nil {
-		panic("crane: nil handler")
+		log.Panic("crane: nil handler")
 	}
 	if _, exists := mux.m[category]; exists {
-		panic("crane: multiple registrations for " + category)
+		log.Panic("crane: multiple registrations for " + category)
 	}
 
 	if mux.m == nil {
@@ -97,7 +98,7 @@ func (mux *EventMux) Handle(category string, h Handler) {
 // HandleFunc registers the handler function for the given category.
 func (mux *EventMux) HandleFunc(category string, h func(context.Context, Event) error) {
 	if h == nil {
-		panic("crane: nil handler")
+		log.Panic("crane: nil handler")
 	}
 	mux.Handle(category, HandlerFunc(h))
 }
@@ -119,7 +120,7 @@ func (s *Server) SetHandler(h Handler) {
 	defer s.mu.Unlock()
 
 	if s.h != nil {
-		panic("crane: multiple server handler registrations")
+		log.Panic("crane: multiple server handler registrations")
 	}
 
 	s.h = h
@@ -128,7 +129,7 @@ func (s *Server) SetHandler(h Handler) {
 // Serve processes an incoming event using registered handler.
 func (s *Server) Serve(ctx context.Context, e Event) error {
 	if s.h == nil {
-		panic("crane: nil server handler")
+		log.Panic("crane: nil server handler")
 	}
 
 	return s.h.Do(ctx, e)

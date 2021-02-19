@@ -49,6 +49,7 @@ func TestLoadConfig(t *testing.T) {
 		DeployBucket:     "CRANE_DEPLOY_BUCKET",
 		StageBucket:      "CRANE_STAGE_BUCKET",
 		ProductionBucket: "CRANE_PRODUCTION_BUCKET",
+		Region:           "ap-southeast-2",
 	}
 
 	config, err := loadConfig()
