@@ -1,3 +1,3 @@
-package main_test
+package aws_test
 
 // TODO: Add tests
