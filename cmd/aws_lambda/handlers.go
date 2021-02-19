@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
-	"errors"
 	"log"
 
 	"github.com/antklim/crane"
+	"github.com/antklim/crane/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -26,33 +28,18 @@ var handlersMap = map[string]handler{
 
 func changeHandler(cfg *config, sess *session.Session) handlerFunc {
 	return func(ctx context.Context, event crane.Event) error {
-		log.Println("Listing assets...")
-		// svc := s3.New(sess)
-		// assets, err := listDeployAssets(svc, cfg.DeployBucket, event.Commit)
-		// if err != nil {
-		// 	log.Println("Assets list failed")
-		// 	return err
-		// }
+		bc := aws.NewBucketClient(s3.New(sess))
 
-		// if len(assets) == 0 {
-		// 	log.Println("No assets found for deployment")
-		// 	return nil
-		// }
+		assetsSize, err := bc.BucketKeySizeWithContext(ctx, cfg.DeployBucket, event.Commit)
+		if err != nil {
+			return errors.Wrap(err, "list changed files failed")
+		}
 
-		// log.Printf("Found %d assets\n", len(assets))
+		log.Printf("found %d of changed files", assetsSize)
 
-		log.Println("Archiving target...")
-		// if err := archiveTarget(svc, cfg.StageBucket, cfg.ArchiveBucket, cfg.ArchiveFolder, event.Commit); err != nil {
-		// 	log.Println("Target archive failed")
-		// 	return err
-		// }
-		log.Println("Target archived")
-
-		log.Println("Syncing target...")
-		// if err := syncTarget(svc, cfg.StageBucket, cfg.DeployBucket, event.Commit); err != nil {
-		// 	log.Println("Target sync failed")
-		// 	return err
-		// }
+		if assetsSize == 0 {
+			return nil
+		}
 
 		return nil
 	}
