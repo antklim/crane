@@ -8,7 +8,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
+
+//go:generate go run github.com/vektra/mockery/v2/ --name S3API --srcpkg github.com/aws/aws-sdk-go/service/s3/s3iface
 
 type bucketService struct {
 	svc s3iface.S3API
@@ -19,8 +22,8 @@ func NewBucketClient(svc s3iface.S3API) crane.BucketAPI {
 	return &bucketService{svc: svc}
 }
 
-// BucketKeySizeWithContext returns amount of objects nested in the key.
-func (b *bucketService) BucketKeySizeWithContext(
+// KeySizeWithContext returns amount of objects nested in the bucket key.
+func (s *bucketService) KeySizeWithContext(
 	ctx context.Context, bucket, key string) (int, error) {
 
 	input := &s3.ListObjectsV2Input{
@@ -34,15 +37,15 @@ func (b *bucketService) BucketKeySizeWithContext(
 		return !lastPage
 	}
 
-	err := b.svc.ListObjectsV2Pages(input, iter)
+	err := s.svc.ListObjectsV2Pages(input, iter)
 	return keySize, err
 }
 
-// CopyBucketWithContext copies objects of scrBucket/srcKey to destBucket/destKeyPrefix.
+// CopyObjectsWithContext copies objects of scrBucket/srcKey to destBucket/destKeyPrefix.
 //
 // When destKeyPrefix is "" then all source objects will be copied to the root
 // of the destination bucket.
-func (b *bucketService) CopyBucketWithContext(
+func (s *bucketService) CopyObjectsWithContext(
 	ctx context.Context, srcBucket, srcKey, destBucket, destKeyPrefix string) error {
 
 	input := &s3.ListObjectsV2Input{
@@ -65,7 +68,7 @@ func (b *bucketService) CopyBucketWithContext(
 				CopySource: aws.String(src),
 			}
 
-			if _, err := b.svc.CopyObject(copyInput); err != nil {
+			if _, err := s.svc.CopyObject(copyInput); err != nil {
 				iterErr = err
 				return false
 			}
@@ -75,8 +78,37 @@ func (b *bucketService) CopyBucketWithContext(
 	}
 
 	// err is a pagination error
-	if err := b.svc.ListObjectsV2Pages(input, iter); err != nil {
+	if err := s.svc.ListObjectsV2Pages(input, iter); err != nil {
 		return err
 	}
 	return iterErr
+}
+
+// DeleteObjectsWithContext deletes all objects of bucket/keyPrefix.
+//
+// When keyPrefix is "" then all bucket objects will be deleted.
+func (s *bucketService) DeleteObjectsWithContext(
+	ctx context.Context, bucket, keyPrefix string) error {
+
+	iter := s3manager.NewDeleteListIterator(s.svc, &s3.ListObjectsInput{
+		Bucket: aws.String(bucket),
+		Prefix: aws.String(keyPrefix),
+	})
+
+	return s3manager.NewBatchDeleteWithClient(s.svc).Delete(ctx, iter)
+}
+
+// SyncObjectsWithContext overwrites all objects of destBucket/destKeyPrefix with
+// the bjects of srcBucket/srcKey.
+//
+// When destKeyPrefix is "" then all source objects will be copied to the root
+// of the destination bucket.
+func (s *bucketService) SyncObjectsWithContext(
+	ctx context.Context, srcBucket, srcKey, destBucket, destKeyPrefix string) error {
+
+	if err := s.DeleteObjectsWithContext(ctx, destBucket, destKeyPrefix); err != nil {
+		return err
+	}
+
+	return s.CopyObjectsWithContext(ctx, srcBucket, srcKey, destBucket, destKeyPrefix)
 }

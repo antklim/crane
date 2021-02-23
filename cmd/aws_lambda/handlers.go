@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"path"
 
 	"github.com/antklim/crane"
 	"github.com/antklim/crane/aws"
@@ -30,7 +31,7 @@ func changeHandler(cfg *config, sess *session.Session) handlerFunc {
 	return func(ctx context.Context, event crane.Event) error {
 		bc := aws.NewBucketClient(s3.New(sess))
 
-		assetsSize, err := bc.BucketKeySizeWithContext(ctx, cfg.DeployBucket, event.Commit)
+		assetsSize, err := bc.KeySizeWithContext(ctx, cfg.DeployBucket, event.Commit)
 		if err != nil {
 			return errors.Wrap(err, "list changed files failed")
 		}
@@ -40,6 +41,14 @@ func changeHandler(cfg *config, sess *session.Session) handlerFunc {
 		if assetsSize == 0 {
 			return nil
 		}
+
+		archiveKeyPrefix := path.Join(cfg.ArchiveFolder, "pre_"+event.Commit)
+		bc.CopyObjectsWithContext(ctx, cfg.StageBucket, "", cfg.ArchiveBucket, archiveKeyPrefix)
+		if err != nil {
+			return errors.Wrap(err, "archive stage bucket failed")
+		}
+
+		// sync: deploy -> target
 
 		return nil
 	}
