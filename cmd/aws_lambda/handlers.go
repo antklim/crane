@@ -37,18 +37,20 @@ func changeHandler(cfg *config, sess *session.Session) handlerFunc {
 		}
 
 		log.Printf("found %d of changed files", assetsSize)
-
 		if assetsSize == 0 {
 			return nil
 		}
 
 		archiveKeyPrefix := path.Join(cfg.ArchiveFolder, "pre_"+event.Commit)
-		bc.CopyObjectsWithContext(ctx, cfg.StageBucket, "", cfg.ArchiveBucket, archiveKeyPrefix)
+		err = bc.CopyObjectsWithContext(ctx, cfg.StageBucket, "", cfg.ArchiveBucket, archiveKeyPrefix)
 		if err != nil {
 			return errors.Wrap(err, "archive stage bucket failed")
 		}
 
-		// sync: deploy -> target
+		err = bc.SyncObjectsWithContext(ctx, cfg.DeployBucket, event.Commit, cfg.StageBucket, "")
+		if err != nil {
+			return errors.Wrap(err, "sync of assets and stage buckets failed")
+		}
 
 		return nil
 	}
