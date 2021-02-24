@@ -58,7 +58,14 @@ func changeHandler(cfg *config, sess *session.Session) handlerFunc {
 
 func releaseHandler(cfg *config, sess *session.Session) handlerFunc {
 	return func(ctx context.Context, event crane.Event) error {
-		return errors.New("not implemented")
+		bc := aws.NewBucketClient(s3.New(sess))
+
+		err := bc.SyncObjectsWithContext(ctx, cfg.StageBucket, "", cfg.ProductionBucket, "")
+		if err != nil {
+			return errors.Wrap(err, "sync of assets and stage buckets failed")
+		}
+
+		return nil
 	}
 }
 
