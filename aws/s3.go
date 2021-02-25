@@ -1,5 +1,7 @@
 package aws
 
+//go:generate go run github.com/vektra/mockery/v2/ --name S3API --srcpkg github.com/aws/aws-sdk-go/service/s3/s3iface
+
 import (
 	"context"
 	"path"
@@ -10,8 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
-
-//go:generate go run github.com/vektra/mockery/v2/ --name S3API --srcpkg github.com/aws/aws-sdk-go/service/s3/s3iface
 
 // TODO: Add integration tests to validate interator functions.
 
