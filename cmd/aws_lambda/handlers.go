@@ -49,7 +49,7 @@ func (s *service) change(ctx context.Context, event crane.Event) error {
 		return nil
 	}
 
-	archiveKeyPrefix := path.Join(cfg.ArchiveFolder, "pre_"+event.Commit)
+	archiveKeyPrefix := path.Join(s.cfg.ArchiveFolder, "pre_"+event.Commit)
 	err = s.bc.CopyObjectsWithContext(ctx, s.cfg.StageBucket, "", s.cfg.ArchiveBucket, archiveKeyPrefix)
 	if err != nil {
 		return errors.Wrap(err, "archive stage bucket failed")
