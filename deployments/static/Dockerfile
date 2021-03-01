@@ -1,6 +1,8 @@
 # 1. Build
 FROM golang:alpine as builder
 
+ARG version=unknown
+
 ENV GO111MODULE=on \
   CGO_ENABLED=0 \
   GOOS=linux \
@@ -14,7 +16,7 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o . ./...
+RUN go build -ldflags "-X main.version=${version}" -o . ./...
 
 # 2. Run
 FROM gcr.io/distroless/base
