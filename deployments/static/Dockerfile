@@ -19,7 +19,7 @@ RUN go build -o . ./...
 # 2. Run
 FROM gcr.io/distroless/base
 
-COPY --from=builder /build/aws_lambda /
+COPY --from=builder /build/static /
 
 # Command to run
-ENTRYPOINT ["/aws_lambda"]
+ENTRYPOINT ["/static"]

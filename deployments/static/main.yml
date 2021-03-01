@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: Crane lambda.
+Description: Crane - lambda to maintain a static site deploy process
 
 Parameters:
   CraneImage:
