@@ -1,0 +1,130 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Crane lambda.
+
+Parameters:
+  CraneImage:
+    Description: URI of a container image in the Amazon ECR registry
+    Type: String
+
+  ArchiveBucket:
+    Description: A bucket where to archive build assets
+    Type: String
+
+  ArchiveFolder:
+    Description: An archive bucket folder where to archive build assets
+    Type: String
+
+  DeployBucket:
+    Description: A bucket where new build assets uploaded
+    Type: String
+
+  ProductionBucket:
+    Description: A bucket that serves production envirnoment
+    Type: String
+
+  StageBucket:
+    Description: A bucket that serves stage envirnoment
+    Type: String
+
+  Region:
+    Description: AWS resources region (buckets, SNS, SQS, etc)
+    Default: ap-southeast-2
+    Type: String
+
+  ProjectName:
+    Description: Project name used to identify created AWS resources
+    Type: String
+
+Resources:
+  CranePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: !Sub ${ProjectName} resources access policy for Crane
+      ManagedPolicyName: !Sub ${ProjectName}-crane-policy
+      PolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+            Resource:
+              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource:
+              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ProjectName}-crane:*"
+
+          # Allow read DeployBucket
+          - Effect: Allow
+            Action:
+              - s3:ListBucket
+              - s3:GetObject
+            Resource:
+              - !Sub arn:aws:s3:::${DeployBucket}
+              - !Sub arn:aws:s3:::${DeployBucket}/*
+
+          # Allow write to ArchiveBucket
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:PutObjectTagging
+            Resource:
+              - !Sub arn:aws:s3:::${ArchiveBucket}
+              - !Sub arn:aws:s3:::${ArchiveBucket}/*
+
+          # Allow read-write StageBucket
+          - Effect: Allow
+            Action:
+              - s3:ListBucket
+              - s3:GetObject
+              - s3:PutObject
+              - s3:PutObjectTagging
+            Resource:
+              - !Sub arn:aws:s3:::${StageBucket}
+              - !Sub arn:aws:s3:::${StageBucket}/*
+
+          # Allow write ProductionBucket
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:PutObjectTagging
+            Resource:
+              - !Sub arn:aws:s3:::${ProductionBucket}
+              - !Sub arn:aws:s3:::${ProductionBucket}/*
+
+  # TODO: Add lambda execution permissions
+  CraneRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: !Sub ${ProjectName} role for Crane
+      RoleName: !Sub ${ProjectName}-crane-role
+      ManagedPolicyArns:
+        - !Ref CranePolicy
+      Tags:
+        - Key: project
+          Value: !Ref ProjectName
+        - Key: stack
+          Value: !Ref AWS::StackName
+
+  Crane:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: go1.x
+      Role: !GetAtt CraneRole.Arn
+      FunctionName: !Sub ${ProjectName}-crane
+      PackageType: Image
+      Code:
+        ImageUri: CraneImage      
+      Tags:
+        - Key: project
+          Value: !Ref ProjectName
+        - Key: stack
+          Value: !Ref AWS::StackName
+
+Outputs:
+  FunctionName:
+    Value: !GetAtt Crane.FunctionName
