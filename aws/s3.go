@@ -14,6 +14,8 @@ import (
 )
 
 // TODO: Add integration tests to validate interator functions.
+// TODO: Add support of copy bucket objects with subdirectories.
+// Currently, copy flattens the structure.
 
 type bucketService struct {
 	svc s3iface.S3API
@@ -35,7 +37,12 @@ func (s *bucketService) KeySizeWithContext(
 
 	keySize := 0
 	iter := func(out *s3.ListObjectsV2Output, lastPage bool) bool {
-		keySize += len(out.Contents)
+		for _, v := range out.Contents {
+			// out.Contents contains directories keys that have no size
+			if aws.Int64Value(v.Size) > 0 {
+				keySize++
+			}
+		}
 		return !lastPage
 	}
 
@@ -61,6 +68,10 @@ func (s *bucketService) CopyObjectsWithContext(
 	var iterErr error
 	iter := func(out *s3.ListObjectsV2Output, lastPage bool) bool {
 		for _, v := range out.Contents {
+			if aws.Int64Value(v.Size) == 0 {
+				continue
+			}
+
 			destKey := path.Join(destKeyPrefix, path.Base(*v.Key))
 			src := path.Join(srcBucket, *v.Key)
 

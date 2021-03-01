@@ -66,7 +66,7 @@ func (s *service) change(ctx context.Context, event crane.Event) error {
 func (s *service) release(ctx context.Context) error {
 	err := s.bc.SyncObjectsWithContext(ctx, s.cfg.StageBucket, "", s.cfg.ProductionBucket, "")
 	if err != nil {
-		return errors.Wrap(err, "sync of assets and stage buckets failed")
+		return errors.Wrap(err, "sync of assets and production buckets failed")
 	}
 
 	return nil

@@ -83,6 +83,7 @@ Resources:
               - s3:GetObject
               - s3:PutObject
               - s3:PutObjectTagging
+              - s3:DeleteObject
             Resource:
               - !Sub arn:aws:s3:::${StageBucket}
               - !Sub arn:aws:s3:::${StageBucket}/*
@@ -91,6 +92,7 @@ Resources:
             Action:
               - s3:PutObject
               - s3:PutObjectTagging
+              - s3:DeleteObject
             Resource:
               - !Sub arn:aws:s3:::${ProductionBucket}
               - !Sub arn:aws:s3:::${ProductionBucket}/*
