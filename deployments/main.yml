@@ -43,6 +43,15 @@ Resources:
     Properties:
       Description: !Sub ${ProjectName} resources access policy for Crane
       ManagedPolicyName: !Sub ${ProjectName}-crane-policy
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - lambda.amazonaws.com
       PolicyDocument: 
         Version: '2012-10-17'
         Statement:
