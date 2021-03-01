@@ -122,7 +122,6 @@ Resources:
   Crane:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: go1.x
       Role: !GetAtt CraneRole.Arn
       FunctionName: !Sub ${ProjectName}-crane
       PackageType: Image
