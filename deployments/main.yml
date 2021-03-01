@@ -38,28 +38,29 @@ Parameters:
     Type: String
 
 Resources:
-  CranePolicy:
+  CraneExecutionPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      Description: !Sub ${ProjectName} resources access policy for Crane
-      ManagedPolicyName: !Sub ${ProjectName}-crane-policy
+      Description: !Sub ${ProjectName} execution policy for Crane
+      ManagedPolicyName: !Sub ${ProjectName}-crane-execution-policy
       PolicyDocument: 
         Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Action:
               - logs:CreateLogGroup
-            Resource:
-              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
-
-          - Effect: Allow
-            Action:
               - logs:CreateLogStream
               - logs:PutLogEvents
-            Resource:
-              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ProjectName}-crane:*"
+            Resource: '*'
 
-          # Allow read DeployBucket
+  CraneAssetsPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: !Sub ${ProjectName} assets access policy for Crane
+      ManagedPolicyName: !Sub ${ProjectName}-crane-assets-policy
+      PolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
           - Effect: Allow
             Action:
               - s3:ListBucket
@@ -68,7 +69,6 @@ Resources:
               - !Sub arn:aws:s3:::${DeployBucket}
               - !Sub arn:aws:s3:::${DeployBucket}/*
 
-          # Allow write to ArchiveBucket
           - Effect: Allow
             Action:
               - s3:PutObject
@@ -77,7 +77,6 @@ Resources:
               - !Sub arn:aws:s3:::${ArchiveBucket}
               - !Sub arn:aws:s3:::${ArchiveBucket}/*
 
-          # Allow read-write StageBucket
           - Effect: Allow
             Action:
               - s3:ListBucket
@@ -88,7 +87,6 @@ Resources:
               - !Sub arn:aws:s3:::${StageBucket}
               - !Sub arn:aws:s3:::${StageBucket}/*
 
-          # Allow write ProductionBucket
           - Effect: Allow
             Action:
               - s3:PutObject
@@ -112,7 +110,8 @@ Resources:
               Service:
                 - lambda.amazonaws.com
       ManagedPolicyArns:
-        - !Ref CranePolicy
+        - !Ref CraneExecutionPolicy
+        - !Ref CraneAssetsPolicy
       Tags:
         - Key: project
           Value: !Ref ProjectName
@@ -126,7 +125,15 @@ Resources:
       FunctionName: !Sub ${ProjectName}-crane
       PackageType: Image
       Code:
-        ImageUri: CraneImage      
+        ImageUri: !Ref CraneImage
+      Environment:
+        Variables:
+          CRANE_ARCHIVE_BUCKET: !Ref ArchiveBucket
+          CRANE_ARCHIVE_FOLDER: !Ref ArchiveFolder
+          CRANE_DEPLOY_BUCKET: !Ref DeployBucket
+          CRANE_STAGE_BUCKET: !Ref StageBucket
+          CRANE_PRODUCTION_BUCKET: !Ref ProductionBucket
+          CRANE_REGION: !Ref Region
       Tags:
         - Key: project
           Value: !Ref ProjectName
