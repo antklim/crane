@@ -38,7 +38,12 @@ func lambdaHandler(ctx context.Context, event crane.Event) error {
 	log.Printf("version %s\n", version)
 	log.Printf("event %+v\n", event)
 
-	return craneServer.Serve(ctx, event)
+	err := craneServer.Serve(ctx, event)
+	if err != nil {
+		log.Printf("%+v\n", err)
+	}
+
+	return err
 }
 
 func main() {
