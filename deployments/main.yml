@@ -13,6 +13,7 @@ Parameters:
 
   ArchiveFolder:
     Description: An archive bucket folder where to archive build assets
+    Default: ''
     Type: String
 
   DeployBucket:
@@ -96,7 +97,6 @@ Resources:
               - !Sub arn:aws:s3:::${ProductionBucket}
               - !Sub arn:aws:s3:::${ProductionBucket}/*
 
-  # TODO: Add lambda execution permissions
   CraneRole:
     Type: AWS::IAM::Role
     Properties:
@@ -124,7 +124,3 @@ Resources:
           Value: !Ref ProjectName
         - Key: stack
           Value: !Ref AWS::StackName
-
-Outputs:
-  FunctionName:
-    Value: !GetAtt Crane.FunctionName
