@@ -6,5 +6,5 @@ curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d
 
 aws ecr get-login-password --region AWS_REGION --profile PROFILE | docker login --username AWS --password-stdin AWS_ACC.dkr.ecr.AWS_REGION.amazonaws.com
 
-docker tag go-crane:latest AWS_ACC.dkr.ecr.AWS_REGION.amazonaws.com/go-crane:latest
-docker push AWS_ACC.dkr.ecr.AWS_REGION.amazonaws.com/go-crane:latest
+docker tag go-crane-static:latest AWS_ACC.dkr.ecr.AWS_REGION.amazonaws.com/go-crane-static:latest
+docker push AWS_ACC.dkr.ecr.AWS_REGION.amazonaws.com/go-crane-static:latest
