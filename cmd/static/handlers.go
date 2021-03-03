@@ -63,10 +63,10 @@ func (s *service) change(ctx context.Context, event crane.Event) error {
 	return nil
 }
 
-func (s *service) release(ctx context.Context) error {
+func (s *service) release(ctx context.Context, event crane.Event) error {
 	err := s.bc.SyncObjectsWithContext(ctx, s.cfg.StageBucket, "", s.cfg.ProductionBucket, "")
 	if err != nil {
-		return errors.Wrap(err, "sync of assets and production buckets failed")
+		return errors.Wrap(err, "sync of stage and production buckets failed")
 	}
 
 	return nil
@@ -84,7 +84,7 @@ func releaseHandler(cfg *config, sess *session.Session) handlerFunc {
 	return func(ctx context.Context, event crane.Event) error {
 		bc := aws.NewBucketClient(s3.New(sess))
 		s := newService(bc, cfg)
-		return s.release(ctx)
+		return s.release(ctx, event)
 	}
 }
 

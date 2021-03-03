@@ -11,8 +11,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// TODO: Add tests
-
 func TestServiceChange(t *testing.T) {
 	cfg := &config{
 		ArchiveBucket:    "archive-bucket",
@@ -191,5 +189,79 @@ func TestServiceChange(t *testing.T) {
 }
 
 func TestServiceRelease(t *testing.T) {
-	t.Skip("tests not implemented")
+	cfg := &config{
+		ArchiveBucket:    "archive-bucket",
+		ArchiveFolder:    "archive-folder",
+		DeployBucket:     "deploy-bucket",
+		StageBucket:      "stage-bucket",
+		ProductionBucket: "production-bucket",
+		Region:           "ap-southeast-1",
+	}
+
+	event := crane.Event{
+		Category: releaseCategory,
+		Commit:   "667e4623",
+	}
+
+	testCases := []struct {
+		desc   string
+		bc     func() (crane.BucketAPI, func(*testing.T))
+		assert func(*testing.T, error)
+	}{
+		{
+			desc: "returns error when BucketAPI SyncObjectsWithContext failed",
+			bc: func() (crane.BucketAPI, func(*testing.T)) {
+				m := &mocks.BucketAPI{}
+				m.On(
+					"SyncObjectsWithContext",
+					mock.AnythingOfType("*context.emptyCtx"),
+					"stage-bucket",
+					"",
+					"production-bucket",
+					"",
+				).Return(errors.New("SyncObjectsWithContext error")).Once()
+
+				ae := func(t *testing.T) {
+					m.AssertExpectations(t)
+				}
+
+				return m, ae
+			},
+			assert: func(t *testing.T, err error) {
+				assert.EqualError(t, err, "sync of stage and production buckets failed: SyncObjectsWithContext error")
+			},
+		},
+		{
+			desc: "returns nil when successfully fnished",
+			bc: func() (crane.BucketAPI, func(*testing.T)) {
+				m := &mocks.BucketAPI{}
+				m.On(
+					"SyncObjectsWithContext",
+					mock.AnythingOfType("*context.emptyCtx"),
+					"stage-bucket",
+					"",
+					"production-bucket",
+					"",
+				).Return(nil).Once()
+
+				ae := func(t *testing.T) {
+					m.AssertExpectations(t)
+				}
+
+				return m, ae
+			},
+			assert: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			bc, ae := tC.bc()
+			svc := newService(bc, cfg)
+			err := svc.release(context.Background(), event)
+			tC.assert(t, err)
+			ae(t)
+		})
+	}
 }
