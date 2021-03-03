@@ -36,17 +36,8 @@ func (s *bucketService) KeySizeWithContext(
 	}
 
 	keySize := 0
-	iter := func(out *s3.ListObjectsV2Output, lastPage bool) bool {
-		for _, v := range out.Contents {
-			// out.Contents contains directories keys that have no size
-			if aws.Int64Value(v.Size) > 0 {
-				keySize++
-			}
-		}
-		return !lastPage
-	}
+	err := s.svc.ListObjectsV2Pages(input, keySizeIterator(&keySize))
 
-	err := s.svc.ListObjectsV2Pages(input, iter)
 	return keySize, err
 }
 
@@ -66,29 +57,7 @@ func (s *bucketService) CopyObjectsWithContext(
 	// use errors channel to propagate errors from go routine
 
 	var iterErr error
-	iter := func(out *s3.ListObjectsV2Output, lastPage bool) bool {
-		for _, v := range out.Contents {
-			if aws.Int64Value(v.Size) == 0 {
-				continue
-			}
-
-			destKey := path.Join(destKeyPrefix, path.Base(*v.Key))
-			src := path.Join(srcBucket, *v.Key)
-
-			copyInput := &s3.CopyObjectInput{
-				Bucket:     aws.String(destBucket),
-				Key:        aws.String(destKey),
-				CopySource: aws.String(src),
-			}
-
-			if _, err := s.svc.CopyObject(copyInput); err != nil {
-				iterErr = err
-				return false
-			}
-		}
-
-		return !lastPage
-	}
+	iter := copyObjectsIterator(s.svc, srcBucket, destBucket, destKeyPrefix, &iterErr)
 
 	// err is a pagination error
 	if err := s.svc.ListObjectsV2Pages(input, iter); err != nil {
@@ -103,10 +72,12 @@ func (s *bucketService) CopyObjectsWithContext(
 func (s *bucketService) DeleteObjectsWithContext(
 	ctx context.Context, bucket, keyPrefix string) error {
 
-	iter := s3manager.NewDeleteListIterator(s.svc, &s3.ListObjectsInput{
+	input := &s3.ListObjectsInput{
 		Bucket: aws.String(bucket),
 		Prefix: aws.String(keyPrefix),
-	})
+	}
+
+	iter := s3manager.NewDeleteListIterator(s.svc, input)
 
 	return s3manager.NewBatchDeleteWithClient(s.svc).Delete(ctx, iter)
 }
@@ -124,4 +95,47 @@ func (s *bucketService) SyncObjectsWithContext(
 	}
 
 	return s.CopyObjectsWithContext(ctx, srcBucket, srcKey, destBucket, destKeyPrefix)
+}
+
+func keySizeIterator(counter *int) func(*s3.ListObjectsV2Output, bool) bool {
+	return func(out *s3.ListObjectsV2Output, lastPage bool) bool {
+		for _, v := range out.Contents {
+			// out.Contents contains directories keys that have no size
+			if aws.Int64Value(v.Size) > 0 {
+				*counter++
+			}
+		}
+		return !lastPage
+	}
+}
+
+func copyObjectsIterator(
+	svc s3iface.S3API,
+	srcBucket, destBucket, destKeyPrefix string,
+	iterErr *error,
+) func(*s3.ListObjectsV2Output, bool) bool {
+
+	return func(out *s3.ListObjectsV2Output, lastPage bool) bool {
+		for _, v := range out.Contents {
+			if aws.Int64Value(v.Size) == 0 {
+				continue
+			}
+
+			destKey := path.Join(destKeyPrefix, path.Base(*v.Key))
+			src := path.Join(srcBucket, *v.Key)
+
+			input := &s3.CopyObjectInput{
+				Bucket:     aws.String(destBucket),
+				Key:        aws.String(destKey),
+				CopySource: aws.String(src),
+			}
+
+			if _, err := svc.CopyObject(input); err != nil {
+				*iterErr = err
+				return false
+			}
+		}
+
+		return !lastPage
+	}
 }
