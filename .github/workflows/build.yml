@@ -8,12 +8,13 @@ on:
     branches:
     - master
 
-# TODO: Add publish to ECR
-
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${GITHUB_SHA::8}
+
     steps:
 
     - name: Check out code into the Go module directory
@@ -39,7 +40,7 @@ jobs:
 
     - name: Build
       run: |      
-        go build -ldflags "-X main.version=${GITHUB_SHA::8}" -o . ./...
+        go build -ldflags "-X main.version=$VERSION" -o . ./...
         zip static.zip static
 
     - name: Configure AWS credentials
@@ -55,4 +56,16 @@ jobs:
 
     - name: Copy crane build assets to the bucket
       run: |
-        aws s3 cp static.zip s3://${{ secrets.AWS_ASSETS_BUCKET }}/crane/${GITHUB_SHA::8}/
+        aws s3 cp static.zip s3://${{ secrets.AWS_ASSETS_BUCKET }}/crane/$VERSION/
+
+    - name: Login to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push image to Amazon ECR
+      env:
+        REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY }}
+      run: |
+        docker build -t $REPOSITORY:latest -t $REPOSITORY:$VERSION \
+          -f ./deployments/static/Dockerfile . --build-arg version=$VERSION
+        docker push $REPOSITORY:latest
+        docker push $REPOSITORY:$VERSION
