@@ -13,7 +13,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     env:
-      VERSION: "${GITHUB_SHA::8}"
+      VERSION: $(${GITHUB_SHA::8})
 
     steps:
 
