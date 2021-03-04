@@ -12,14 +12,17 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    env:
-      VERSION: $(${GITHUB_SHA::8})
 
     steps:
 
+      - name: Build version
+        id: version
+        run: |
+          echo "::set-output name=id::${GITHUB_SHA::8}"
+        
       - name: Test version
         run: |
-          echo ">>>> $VERSION"
+          echo ">>> ${{steps.version.id}}"
 
     # - name: Check out code into the Go module directory
     #   uses: actions/checkout@v2
