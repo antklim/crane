@@ -13,59 +13,63 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     env:
-      VERSION: ${GITHUB_SHA::8}
+      VERSION: ${{ github.sha }}
 
     steps:
 
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
+      - name: Test version
+        run: |
+          echo ">>>> $VERSION"
 
-    - name: Set up Go 1.x
-      uses: actions/setup-go@v2
-      with:
-        go-version: ^1.13
-      id: go
+    # - name: Check out code into the Go module directory
+    #   uses: actions/checkout@v2
 
-    - name: Get dependencies
-      run: |
-        go mod download
+    # - name: Set up Go 1.x
+    #   uses: actions/setup-go@v2
+    #   with:
+    #     go-version: ^1.13
+    #   id: go
 
-    - name: Test
-      run: |
-        go test -race -coverprofile=coverage.out -covermode=atomic ./...
+    # - name: Get dependencies
+    #   run: |
+    #     go mod download
 
-    - name: Upload coverage to Codecov
-      run: |
-        bash <(curl -s https://codecov.io/bash)
+    # - name: Test
+    #   run: |
+    #     go test -race -coverprofile=coverage.out -covermode=atomic ./...
 
-    - name: Build
-      run: |      
-        go build -ldflags "-X main.version=$VERSION" -o . ./...
-        zip static.zip static
+    # - name: Upload coverage to Codecov
+    #   run: |
+    #     bash <(curl -s https://codecov.io/bash)
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-southeast-2
-        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-        role-external-id: ${{ secrets.AWS_ROLE_EXTERNAL_ID }}
-        role-duration-seconds: 1200
-        role-session-name: CraneAssetsUploadSessions
+    # - name: Build
+    #   run: |      
+    #     go build -ldflags "-X main.version=$VERSION" -o . ./...
+    #     zip static.zip static
 
-    - name: Copy crane build assets to the bucket
-      run: |
-        aws s3 cp static.zip s3://${{ secrets.AWS_ASSETS_BUCKET }}/crane/$VERSION/
+    # - name: Configure AWS credentials
+    #   uses: aws-actions/configure-aws-credentials@v1
+    #   with:
+    #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #     aws-region: ap-southeast-2
+    #     role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+    #     role-external-id: ${{ secrets.AWS_ROLE_EXTERNAL_ID }}
+    #     role-duration-seconds: 1200
+    #     role-session-name: CraneAssetsUploadSessions
 
-    - name: Login to Amazon ECR
-      uses: aws-actions/amazon-ecr-login@v1
+    # - name: Copy crane build assets to the bucket
+    #   run: |
+    #     aws s3 cp static.zip s3://${{ secrets.AWS_ASSETS_BUCKET }}/crane/$VERSION/
 
-    - name: Build, tag, and push image to Amazon ECR
-      env:
-        REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY }}
-      run: |
-        docker build -t $REPOSITORY:latest -t $REPOSITORY:$VERSION \
-          -f ./deployments/static/Dockerfile . --build-arg version=$VERSION
-        docker push $REPOSITORY:latest
-        docker push $REPOSITORY:$VERSION
+    # - name: Login to Amazon ECR
+    #   uses: aws-actions/amazon-ecr-login@v1
+
+    # - name: Build, tag, and push image to Amazon ECR
+    #   env:
+    #     REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY }}
+    #   run: |
+    #     docker build -t $REPOSITORY:latest -t $REPOSITORY:$VERSION \
+    #       -f ./deployments/static/Dockerfile . --build-arg version=$VERSION
+    #     docker push $REPOSITORY:latest
+    #     docker push $REPOSITORY:$VERSION
